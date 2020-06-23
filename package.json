@@ -1,4 +1,7 @@
 {
+  "scripts": {
+    "build": "tsc"
+  },
   "dependencies": {
     "@types/node": "^14.0.13",
     "aws-sdk": "^2.702.0",
@@ -6,5 +9,8 @@
     "chalk": "^4.1.0",
     "commander": "^5.1.0",
     "typescript": "^3.9.5"
+  },
+  "bin": {
+    "s3ul": "dist/s3ul.js"
   }
 }

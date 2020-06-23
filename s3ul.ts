@@ -1,3 +1,4 @@
+#!/usr/bin/env node
 import { S3 } from "aws-sdk";
 import { program } from "commander";
 import stream from "stream";
