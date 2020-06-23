@@ -1,3 +1,4 @@
+```bash
 Usage: s3upload [options] <resource> <bucketKey>
 
 Fetches network resource and uploads it to S3
@@ -14,3 +15,4 @@ Options:
   --put                         specify PUT request (default: false)
   -h, --headers <headers>       specify headers
   --help                        display help for command
+```
