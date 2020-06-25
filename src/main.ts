@@ -10,7 +10,7 @@ export async function main(resourcePath: string, bucketKey: string, args: any) {
   const s3client = createS3Client(accessKey, secretKey);
 
   if (!isUrl) {
-    const fspath = path.join(__dirname, resourcePath);
+    const fspath = path.join(process.cwd(), resourcePath);
     if (fs.existsSync(fspath)) {
       try {
         await s3UploadFromFs(fspath, bucket, bucketKey, s3client);
