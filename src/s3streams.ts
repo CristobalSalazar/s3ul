@@ -1,8 +1,10 @@
 import { S3 } from "aws-sdk";
 import axios, { Method } from "axios";
-import { PassThrough } from "stream";
+import { PassThrough, Readable } from "stream";
 import fs from "fs";
 import { logger } from "./logger";
+
+let transferProgress = 0;
 
 interface S3StreamProps {
   bucketName: string;
@@ -11,20 +13,21 @@ interface S3StreamProps {
   s3client: S3;
 }
 
-export function getS3WriteStream(props: S3StreamProps) {
+export function getS3PassThrough(props: S3StreamProps) {
   const { bucketName, bucketKey, contentLength, s3client } = props;
-  const writeStream = new PassThrough();
-  const s3promise = s3client
-    .putObject({
-      Bucket: bucketName,
-      Key: bucketKey,
-      Body: writeStream,
-      ContentLength: contentLength
-    })
-    .promise();
+  const passThrough = new PassThrough();
+  const s3promise = () =>
+    s3client
+      .putObject({
+        Bucket: bucketName,
+        Key: bucketKey,
+        Body: passThrough,
+        ContentLength: contentLength
+      })
+      .promise();
 
   return {
-    writeStream,
+    passThrough,
     s3promise
   };
 }
@@ -36,27 +39,50 @@ export async function s3UploadFromFs(
   client: S3
 ) {
   const contentLength = fs.statSync(fspath).size;
-  const { writeStream } = getS3WriteStream({
+  const { passThrough, s3promise } = getS3PassThrough({
     bucketKey,
     s3client: client,
     contentLength,
     bucketName: bucket
   });
   const readStream = fs.createReadStream(fspath);
-  readStream.pipe(writeStream);
-  writeStream.on("end", () => {
-    readStream.unpipe();
-    writeStream.end();
+  startStreams(readStream, passThrough, contentLength);
+  await s3promise();
+}
+
+function startStreams(
+  readStream: Readable,
+  passThrough: PassThrough,
+  contentLength: number
+) {
+  readStream.pipe(passThrough);
+
+  readStream.on("data", chunk => {
+    transferProgress += chunk.length;
+    process.stdout.write(new Array(process.stdout.columns).join(" ") + "\r");
+    process.stdout.write(
+      `Uploading ${Math.floor((transferProgress / contentLength) * 10000) /
+        100}%\r`
+    );
+
+    passThrough.write(chunk);
+    if (transferProgress === contentLength) {
+      passThrough.end();
+    }
+  });
+
+  readStream.on("end", () => {
+    passThrough.end();
   });
 }
 
-let transferProgress = 0;
 export async function s3UploadFromUrl(
   url: string,
   bucketKey: string,
   method: Method = "get",
   s3client: S3,
-  bucketName: string
+  bucketName: string,
+  headers: any = {}
 ) {
   const res = await axios({
     method,
@@ -70,23 +96,16 @@ export async function s3UploadFromUrl(
   if (!contentLength)
     return logger.error(`Cannot determine Content-Length of object`);
 
-  const { writeStream } = getS3WriteStream({
+  const { passThrough, s3promise } = getS3PassThrough({
     contentLength,
     bucketKey,
     s3client,
     bucketName
   });
 
-  const readStream = res.data;
-  const pipeline = readStream.pipe(writeStream);
+  const readStream = res.data as Readable;
 
-  pipeline.on("data", (chunk: Buffer) => {
-    transferProgress += chunk.length;
-    process.stdout.write(
-      `Downloading ${Math.floor((transferProgress / contentLength) * 10000) /
-        100}%\r`
-    );
-  });
+  startStreams(readStream, passThrough, contentLength);
 
-  pipeline.on("end", () => console.log("closing pipeline"));
+  await s3promise();
 }
