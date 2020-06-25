@@ -12,12 +12,15 @@ program
   .option("-u, --url", "Upload from url", false);
 
 program
-  .arguments("<resource> <bucketKey>")
-  .description("Fetches network resource and uploads it to S3")
+  .arguments("<source> <bucketKey>")
+  .description("Fetches network resource or local file and uploads it to S3")
   .option("--get", "specify GET request", true)
   .option("--post", "specify POST request", false)
   .option("--put", "specify PUT request", false)
-  .option("-h, --headers <headers>", "specify headers")
+  .option(
+    "-h, --headers <headers>",
+    "specify headers in the following format key:value,key2:value2"
+  )
   .action(main);
 
 program.parse(process.argv);

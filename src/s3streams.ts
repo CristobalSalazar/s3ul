@@ -65,7 +65,7 @@ function startStreams(
         100}%\r`
     );
 
-    passThrough.write(chunk);
+    // passThrough.write(chunk);
     if (transferProgress === contentLength) {
       passThrough.end();
     }
@@ -85,8 +85,9 @@ export async function s3UploadFromUrl(
   headers: any = {}
 ) {
   const res = await axios({
-    method,
     url,
+    method,
+    headers,
     responseType: "stream"
   });
 
