@@ -1,14 +1,16 @@
 {
   "name": "s3ul",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "scripts": {
     "build": "tsc"
   },
   "dependencies": {
+    "@types/cli-progress": "^3.7.0",
     "@types/node": "^14.0.13",
     "aws-sdk": "^2.702.0",
     "axios": "^0.19.2",
     "chalk": "^4.1.0",
+    "cli-progress": "^3.8.2",
     "commander": "^5.1.0",
     "ts-vcenter": "^0.3.11",
     "typescript": "^3.9.5"
