@@ -1,4 +1,6 @@
 {
+  "name": "s3ul",
+  "version": "0.0.1",
   "scripts": {
     "build": "tsc"
   },
@@ -8,6 +10,7 @@
     "axios": "^0.19.2",
     "chalk": "^4.1.0",
     "commander": "^5.1.0",
+    "ts-vcenter": "^0.3.11",
     "typescript": "^3.9.5"
   },
   "bin": {
