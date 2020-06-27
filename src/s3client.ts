@@ -10,7 +10,9 @@ export function createS3Client(
       accessKeyId: access,
       secretAccessKey: secret
     },
-    region: region || "us-east-1",
+    region: region,
     signatureVersion: "v4"
   });
+
+  const s3x = /(?:\[s3x\]\naws_access_key_id=)(.*)(?:\naws_secret_access_key=)(.*)$/g;
 }

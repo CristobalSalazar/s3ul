@@ -1,36 +1,8 @@
 import { S3 } from "aws-sdk";
 import axios, { Method } from "axios";
-import { PassThrough, Readable } from "stream";
+import { Readable } from "stream";
 import fs from "fs";
 import { logger } from "./logger";
-
-let transferProgress = 0;
-
-interface S3StreamProps {
-  bucketName: string;
-  bucketKey: string;
-  contentLength: number;
-  s3client: S3;
-}
-
-export function getS3PassThrough(props: S3StreamProps) {
-  const { bucketName, bucketKey, contentLength, s3client } = props;
-  const passThrough = new PassThrough();
-  const s3promise = () =>
-    s3client
-      .putObject({
-        Bucket: bucketName,
-        Key: bucketKey,
-        Body: passThrough,
-        ContentLength: contentLength
-      })
-      .promise();
-
-  return {
-    passThrough,
-    s3promise
-  };
-}
 
 export async function s3UploadFromFs(
   fspath: string,
@@ -38,41 +10,45 @@ export async function s3UploadFromFs(
   bucketKey: string,
   client: S3
 ) {
-  const contentLength = fs.statSync(fspath).size;
-  const { passThrough, s3promise } = getS3PassThrough({
-    bucketKey,
-    s3client: client,
-    contentLength,
-    bucketName: bucket
-  });
+  if (!fs.existsSync(fspath))
+    return logger.error("Invalid file path, path does not exist");
+
+  const stats = fs.statSync(fspath);
+  if (!stats.isFile) {
+    return logger.error("Invalid file path, path does not point towards file");
+  }
+  const contentLength = stats.size;
   const readStream = fs.createReadStream(fspath);
-  startStreams(readStream, passThrough, contentLength);
-  await s3promise();
+  await uploadToS3(client, bucketKey, bucket, readStream, contentLength);
 }
 
-function startStreams(
-  readStream: Readable,
-  passThrough: PassThrough,
+async function uploadToS3(
+  s3client: S3,
+  bucketKey: string,
+  bucketName: string,
+  stream: Readable,
   contentLength: number
 ) {
-  readStream.pipe(passThrough);
-
-  readStream.on("data", chunk => {
-    transferProgress += chunk.length;
-    process.stdout.write(new Array(process.stdout.columns).join(" ") + "\r");
-    process.stdout.write(
-      `Uploading ${Math.floor((transferProgress / contentLength) * 10000) /
-        100}%\r`
-    );
-
-    // passThrough.write(chunk);
-    if (transferProgress === contentLength) {
-      passThrough.end();
-    }
-  });
-
-  readStream.on("end", () => {
-    passThrough.end();
+  return new Promise((res, rej) => {
+    logger.startProgressBar(contentLength);
+    s3client
+      .putObject(
+        {
+          Key: bucketKey,
+          Bucket: bucketName,
+          Body: stream,
+          ContentLength: contentLength
+        },
+        (err, data) => {
+          logger.stopProgressBar();
+          if (err) rej(err);
+          else {
+            logger.success("Finished uploading to s3");
+            res(data);
+          }
+        }
+      )
+      .on("httpUploadProgress", logger.updateProgressBar);
   });
 }
 
@@ -97,16 +73,5 @@ export async function s3UploadFromUrl(
   if (!contentLength)
     return logger.error(`Cannot determine Content-Length of object`);
 
-  const { passThrough, s3promise } = getS3PassThrough({
-    contentLength,
-    bucketKey,
-    s3client,
-    bucketName
-  });
-
-  const readStream = res.data as Readable;
-
-  startStreams(readStream, passThrough, contentLength);
-
-  await s3promise();
+  await uploadToS3(s3client, bucketKey, bucketName, res.data, contentLength);
 }

@@ -3,6 +3,7 @@ import path from "path";
 import { createS3Client } from "./s3client";
 import { logger } from "./logger";
 import { s3UploadFromFs, s3UploadFromUrl } from "./s3streams";
+import { keyreader } from "./keyreader";
 
 function parseHeaders(headers: string) {
   return headers.split(",").reduce((obj: any, str: string) => {
@@ -14,7 +15,23 @@ function parseHeaders(headers: string) {
 
 export async function main(resourcePath: string, bucketKey: string, args: any) {
   const isUrl = /https?:\/\//.test(resourcePath);
-  const { accessKey, secretKey, bucket, headers } = args;
+
+  let { accessKey, secretKey, bucket, headers } = args;
+
+  // check for keys
+  if ((!secretKey && accessKey) || (!accessKey && secretKey)) {
+    return logger.error("Must provide both keys as arguments or none");
+  } else if (!secretKey && !accessKey) {
+    const keys = keyreader.getAWSCredentials();
+    if (!keys) {
+      return logger.error(
+        "Must provide AWS credentials either as arguments or in HOME/.aws/credentials"
+      );
+    }
+    accessKey = keys.access;
+    secretKey = keys.secret;
+  }
+
   const s3client = createS3Client(accessKey, secretKey);
 
   if (!isUrl) {
@@ -22,7 +39,6 @@ export async function main(resourcePath: string, bucketKey: string, args: any) {
     if (fs.existsSync(fspath)) {
       try {
         await s3UploadFromFs(fspath, bucket, bucketKey, s3client);
-        logger.success("Finished uploading to s3");
       } catch (err) {
         logger.error(err);
       }
@@ -42,7 +58,6 @@ export async function main(resourcePath: string, bucketKey: string, args: any) {
         bucket,
         parsedHeaders
       );
-      logger.success("Finished uploading to s3");
     } catch (err) {
       logger.error(err);
     }
