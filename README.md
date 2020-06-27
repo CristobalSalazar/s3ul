@@ -1,47 +1,53 @@
 # s3ul
 
-## CLI utility that fetches from network or file system and uploads it to S3
+### CLI that uploads files to S3 from network or filesystem
 
-*When fetching from network s3ul pipes the download directly to s3*
+
 
 To install locally clone this repo then run <code>npm run deploy:local</code>
 
 ## Example Usage
 
-Local File
+Upload a local File
 ```bash
 s3ul -b BUCKET_NAME -a ACCESS_KEY -s SECRET_KEY ./myfile.jpg path/in/bucket/myfile.jpg
 ```
 
-From network
+Upload a file from the network
+*When fetching from network s3ul pipes the download directly to s3 it is not cached or stored in RAM*
 ```bash
 s3ul -b BUCKET_NAME -a ACCESS_KEY -s SECRET_KEY https://somesite.com/myfile.jpg path/in/bucket/myfile.jpg
 ```
 
-Network requests supports headers as well as put and post methods
-headers must be formatted as such key:value,key2:value2
+Network requests supports put and post methods as well as headers
+
+headers must in the following format
+`key:value,key2:value2`
 ```bash
-s3ul -b BUCKET_NAME -a ACCESS_KEY -s SECRET_KEY --post --h token:mytoken https://somesite.com/myfile.jpg path/in/bucket/myfile.jpg
+s3ul -b BUCKET_NAME -a ACCESS_KEY -s SECRET_KEY --post -h token:mytoken https://somesite.com/myfile.jpg path/in/bucket/myfile.jpg
 ```
 
-You may omit the access key and secret key parameters if you already have your credentials stored in <code>HOME/.aws/credentials</code>
+### Profiles
+You may omit the access key and secret key parameters if you already have your credentials stored in `HOME/.aws/credentials`
+
 s3ul will look for a profile with the name s3x if it doesn't find it it will use the profile named default.
 
-<code>
+```bash
 [s3x]
 aws_access_key_id=YOUR_ACCESS_KEY
 aws_secret_access_key=YOUR_SECRET_KEY
-</code>
+```
 
 Or
 
-<code>
-[s3x]
+```bash
+[default]
 aws_access_key_id=YOUR_ACCESS_KEY
 aws_secret_access_key=YOUR_SECRET_KEY
-</code>
+```
 
-```bash
+### Help display
+```
 Usage: s3ul [options] <source> <bucketKey>
 
 Options:
