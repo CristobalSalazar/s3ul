@@ -1,7 +1,5 @@
 # s3ul
 
-### s3 utility that uploads files from the network or filesystem
-
 To install locally clone this repo then run <code>npm run deploy:local</code>
 
 ### Example Usage
@@ -20,7 +18,7 @@ s3ul -b BUCKET_NAME -a ACCESS_KEY -s SECRET_KEY https://somesite.com/myfile.jpg 
 
 Network requests support put and post methods as well as headers
 
-If specified, headers must in the following format
+If specified, headers must be in the following format
 `key:value,key2:value2`
 ```bash
 s3ul -b BUCKET_NAME -a ACCESS_KEY -s SECRET_KEY --post -h token:mytoken https://somesite.com/myfile.jpg path/in/bucket/myfile.jpg
