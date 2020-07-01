@@ -10,14 +10,12 @@ function parseHeaders(headers: string) {
     const [key, val] = str.split(":");
     obj[key] = val;
     return obj;
-  }, {}); // array of strings
+  }, {});
 }
 
 export async function main(resourcePath: string, bucketKey: string, args: any) {
   const isUrl = /https?:\/\//.test(resourcePath);
-
   let { accessKey, secretKey, bucket, headers } = args;
-
   // check for keys
   if ((!secretKey && accessKey) || (!accessKey && secretKey)) {
     return logger.error("Must provide both keys as arguments or none");
@@ -38,7 +36,7 @@ export async function main(resourcePath: string, bucketKey: string, args: any) {
     const fspath = path.join(process.cwd(), resourcePath);
     if (fs.existsSync(fspath)) {
       try {
-        await s3UploadFromFs(fspath, bucket, bucketKey, s3client);
+        await s3UploadFromFs({ fspath, bucket, bucketKey, client: s3client });
       } catch (err) {
         logger.error(err);
       }

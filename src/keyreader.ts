@@ -4,16 +4,14 @@ import fs from "fs";
 
 export const keyreader = {
   getAWSCredentials: () => {
-    const credspath = path.join(os.homedir(), ".aws/credentials");
-    if (!fs.existsSync(credspath)) {
-      return null;
-    }
+    const credspath = path.join(os.homedir(), ".aws", "credentials");
+    if (!fs.existsSync(credspath)) return null;
     const buffer = fs.readFileSync(credspath);
     const content = buffer.toString();
-    const def = /(?:\[default\]\n)(?:aws_access_key_id=)(.*)(?:\naws_secret_access_key=)(.*)/gm;
-    const s3x = /(?:\[s3x\]\n)(?:aws_access_key_id=)(.*)(?:\naws_secret_access_key=)(.*)/gm;
+    const def = /(?:\[default\](?:\r\n|\n|\r))(?:aws_access_key_id=)(.*)(?:(?:\r\n|\n|\r)aws_secret_access_key=)(.*)/gm;
+    const s3x = /(?:\[s3x\](?:\r\n|\n|\r))(?:aws_access_key_id=)(.*)(?:(?:\r\n|\n|\r)aws_secret_access_key=)(.*)/gm;
     return getKeysFromContent(s3x, content) || getKeysFromContent(def, content);
-  }
+  },
 };
 
 function getKeysFromContent(regex: RegExp, content: string) {

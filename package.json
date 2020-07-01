@@ -17,6 +17,7 @@
     "typescript": "^3.9.5"
   },
   "bin": {
-    "s3ul": "dist/s3ul.js"
+    "s3ul": "dist/s3ul.js",
+    "s3dl": "dist/s3dl.js"
   }
 }

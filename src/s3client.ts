@@ -8,11 +8,9 @@ export function createS3Client(
   return new S3({
     credentials: {
       accessKeyId: access,
-      secretAccessKey: secret
+      secretAccessKey: secret,
     },
     region: region,
-    signatureVersion: "v4"
+    signatureVersion: "v4",
   });
-
-  const s3x = /(?:\[s3x\]\naws_access_key_id=)(.*)(?:\naws_secret_access_key=)(.*)$/g;
 }

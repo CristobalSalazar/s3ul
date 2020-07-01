@@ -1,9 +1,6 @@
 #!/usr/bin/env node
 import { program } from "commander";
-import { main } from "./main";
-import { keyreader } from "./keyreader";
-
-keyreader.getAWSCredentials();
+import { main } from "./ulmain";
 
 program.version("0.0.1");
 

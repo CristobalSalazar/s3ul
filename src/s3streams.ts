@@ -1,25 +1,71 @@
 import { S3 } from "aws-sdk";
 import axios, { Method } from "axios";
-import { Readable } from "stream";
+import { Readable, Writable } from "stream";
 import fs from "fs";
 import { logger } from "./logger";
 
-export async function s3UploadFromFs(
-  fspath: string,
-  bucket: string,
-  bucketKey: string,
-  client: S3
-) {
-  if (!fs.existsSync(fspath))
+interface s3FsRequirements {
+  fspath: string;
+  bucket: string;
+  bucketKey: string;
+  client: S3;
+}
+
+export async function s3DownloadToFs(reqs: s3FsRequirements) {
+  if (!fs.existsSync(reqs.fspath))
     return logger.error("Invalid file path, path does not exist");
 
-  const stats = fs.statSync(fspath);
+  const stream = fs.createWriteStream(reqs.fspath);
+  await downloadFromS3(reqs.client, reqs.bucketKey, reqs.bucket, stream);
+}
+
+export async function s3UploadFromFs(reqs: s3FsRequirements) {
+  if (!fs.existsSync(reqs.fspath))
+    return logger.error("Invalid file path, path does not exist");
+
+  const stats = fs.statSync(reqs.fspath);
   if (!stats.isFile) {
     return logger.error("Invalid file path, path does not point towards file");
   }
   const contentLength = stats.size;
-  const readStream = fs.createReadStream(fspath);
-  await uploadToS3(client, bucketKey, bucket, readStream, contentLength);
+  const readStream = fs.createReadStream(reqs.fspath);
+
+  await uploadToS3(
+    reqs.client,
+    reqs.bucketKey,
+    reqs.bucket,
+    readStream,
+    contentLength
+  );
+}
+
+async function downloadFromS3(
+  s3client: S3,
+  bucketKey: string,
+  bucketName: string,
+  stream: Writable
+) {
+  return new Promise((res, rej) => {
+    const readStream = s3client
+      .getObject({ Bucket: bucketName, Key: bucketKey }, (err, data) => {
+        if (err) {
+          logger.error(err.message);
+          rej(err);
+        } else {
+          logger.success("Finished downloading from s3");
+          res(data);
+        }
+      })
+      .on("httpHeaders", (code, headers) => {
+        const contentLength =
+          headers["content-length"] || headers["Content-Length"];
+        logger.startProgressBar(parseInt(contentLength));
+      })
+      .on("httpDownloadProgress", logger.updateProgressBar)
+      .createReadStream();
+
+    readStream.pipe(stream);
+  });
 }
 
 async function uploadToS3(
@@ -37,7 +83,7 @@ async function uploadToS3(
           Key: bucketKey,
           Bucket: bucketName,
           Body: stream,
-          ContentLength: contentLength
+          ContentLength: contentLength,
         },
         (err, data) => {
           logger.stopProgressBar();
@@ -64,7 +110,7 @@ export async function s3UploadFromUrl(
     url,
     method,
     headers,
-    responseType: "stream"
+    responseType: "stream",
   });
 
   const contentLength =
