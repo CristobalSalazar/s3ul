@@ -1,9 +1,8 @@
-import fs from "fs";
 import path from "path";
-import { createS3Client } from "./s3client";
-import { logger } from "./logger";
-import { s3DownloadToFs } from "./s3streams";
-import { keyreader } from "./keyreader";
+import { createS3Client } from "../lib/s3client";
+import { logger } from "../lib/logger";
+import { s3DownloadToFs } from "../s3streams";
+import { keyreader } from "../lib/keyreader";
 
 export async function main(bucketKey: string, resourcePath: string, args: any) {
   let { accessKey, secretKey, bucket } = args;
@@ -24,13 +23,9 @@ export async function main(bucketKey: string, resourcePath: string, args: any) {
 
   const s3client = createS3Client(accessKey, secretKey);
   const fspath = path.join(process.cwd(), resourcePath);
-  if (fs.existsSync(fspath)) {
-    try {
-      await s3DownloadToFs({ fspath, bucket, bucketKey, client: s3client });
-    } catch (err) {
-      logger.error(err);
-    }
-  } else {
-    logger.error(`File "${resourcePath}" not found.`);
+  try {
+    await s3DownloadToFs({ fspath, bucket, bucketKey, client: s3client });
+  } catch (err) {
+    logger.error(err);
   }
 }

@@ -1,9 +1,8 @@
-import fs from "fs";
 import path from "path";
-import { createS3Client } from "./s3client";
-import { logger } from "./logger";
+import { createS3Client } from "./lib/s3client";
+import { logger } from "./lib/logger";
 import { s3UploadFromFs, s3UploadFromUrl } from "./s3streams";
-import { keyreader } from "./keyreader";
+import { keyreader } from "./lib/keyreader";
 
 function parseHeaders(headers: string) {
   return headers.split(",").reduce((obj: any, str: string) => {

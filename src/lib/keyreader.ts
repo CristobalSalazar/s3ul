@@ -8,9 +8,12 @@ export const keyreader = {
     if (!fs.existsSync(credspath)) return null;
     const buffer = fs.readFileSync(credspath);
     const content = buffer.toString();
-    const def = /(?:\[default\](?:\r\n|\n|\r))(?:aws_access_key_id=)(.*)(?:(?:\r\n|\n|\r)aws_secret_access_key=)(.*)/gm;
-    const s3x = /(?:\[s3x\](?:\r\n|\n|\r))(?:aws_access_key_id=)(.*)(?:(?:\r\n|\n|\r)aws_secret_access_key=)(.*)/gm;
-    return getKeysFromContent(s3x, content) || getKeysFromContent(def, content);
+    const defaultRegex = /(?:\[default\](?:\r\n|\n|\r))(?:aws_access_key_id=)(.*)(?:(?:\r\n|\n|\r)aws_secret_access_key=)(.*)/gm;
+    const s3xRegex = /(?:\[s3x\](?:\r\n|\n|\r))(?:aws_access_key_id=)(.*)(?:(?:\r\n|\n|\r)aws_secret_access_key=)(.*)/gm;
+    return (
+      getKeysFromContent(s3xRegex, content) ||
+      getKeysFromContent(defaultRegex, content)
+    );
   },
 };
 
