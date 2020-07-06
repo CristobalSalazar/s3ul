@@ -43,7 +43,7 @@ async function downloadFromS3(
   stream: Writable
 ) {
   return new Promise((res, rej) => {
-    logger.initProgressBar("Downloading...");
+    logger.createProgressBar("Downloading...");
     const readStream = s3client
       .getObject({ Bucket: bucketName, Key: bucketKey }, (err, data) => {
         logger.stopProgressBar();
@@ -78,7 +78,7 @@ async function uploadToS3(
   contentLength: number
 ) {
   return new Promise((res, rej) => {
-    logger.initProgressBar("Uploading...");
+    logger.createProgressBar("Uploading...");
     logger.startProgressBar(contentLength);
 
     s3client

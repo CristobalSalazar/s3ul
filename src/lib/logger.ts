@@ -8,18 +8,18 @@ class Logger {
       format: `${chalk.cyanBright("{bar}")} ${chalk.yellowBright(
         "{percentage}%"
       )} | ETA: {eta}s | {value}/{total}`,
-      hideCursor: true,
+      hideCursor: true
     },
     Presets.shades_classic
   );
 
-  initProgressBar(message: string) {
-    this.progressBar = new SingleBar(
+  createProgressBar(message: string) {
+    return new SingleBar(
       {
         format: `${message} ${chalk.cyanBright("{bar}")} ${chalk.yellowBright(
           "{percentage}%"
         )} | ETA: {eta}s | {value}/{total}`,
-        hideCursor: true,
+        hideCursor: true
       },
       Presets.shades_classic
     );

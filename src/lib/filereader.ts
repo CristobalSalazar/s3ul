@@ -1,12 +1,37 @@
 import fs from "fs";
 import path from "path";
 
-export function getFilesFromDir(input: string, recursive: boolean = false) {
-  const inputStats = fs.statSync(input);
+export function getS3KeysFromDir(
+  fsdirpath: string,
+  bucketdir: string,
+  recursive: boolean
+) {
+  const fspaths = getFilesFromDir(fsdirpath, recursive);
+  return fspaths.map(fspath => {
+    return {
+      fspath,
+      s3key: convertFsPathToS3Key(fsdirpath, fspath, bucketdir)
+    };
+  });
+}
+
+export function convertFsPathToS3Key(
+  dirpath: string,
+  filepath: string,
+  bucketdir: string
+) {
+  return path.join(
+    bucketdir,
+    filepath.substring(dirpath.length, filepath.length)
+  );
+}
+
+export function getFilesFromDir(dirpath: string, recursive: boolean = false) {
+  const inputStats = fs.statSync(dirpath);
   if (inputStats.isDirectory()) {
-    const paths = fs.readdirSync(input);
+    const paths = fs.readdirSync(dirpath);
     return paths.reduce((val, file) => {
-      const filepath = path.join(input, file);
+      const filepath = path.join(dirpath, file);
       const stats = fs.statSync(filepath);
       if (stats.isDirectory()) {
         if (recursive) {
@@ -19,7 +44,7 @@ export function getFilesFromDir(input: string, recursive: boolean = false) {
       return val;
     }, [] as string[]);
   } else if (inputStats.isFile()) {
-    return [input];
+    return [dirpath];
   } else {
     throw new Error("Not a valid path");
   }
