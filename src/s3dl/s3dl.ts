@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 import { program } from "commander";
-import { main } from "./dl/dlmain";
+import { main } from "./dlmain";
 
 program
   .option("-a, --accessKey <access key>", "AWS Access Key")

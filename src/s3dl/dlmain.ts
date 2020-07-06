@@ -1,7 +1,7 @@
 import path from "path";
 import { createS3Client } from "../lib/s3client";
 import { logger } from "../lib/logger";
-import { s3DownloadToFs } from "../s3streams";
+import { s3DownloadToFs } from "../lib/s3streams";
 import { keyreader } from "../lib/keyreader";
 
 export async function main(bucketKey: string, resourcePath: string, args: any) {

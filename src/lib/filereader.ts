@@ -1,7 +1,7 @@
 import fs from "fs";
 import path from "path";
 
-export function getFilesRecursive(input: string) {
+export function getFilesFromDir(input: string, recursive: boolean = false) {
   const inputStats = fs.statSync(input);
   if (inputStats.isDirectory()) {
     const paths = fs.readdirSync(input);
@@ -9,8 +9,10 @@ export function getFilesRecursive(input: string) {
       const filepath = path.join(input, file);
       const stats = fs.statSync(filepath);
       if (stats.isDirectory()) {
-        const recpaths = getFilesRecursive(filepath);
-        val.push(...recpaths);
+        if (recursive) {
+          const recpaths = getFilesFromDir(filepath, true);
+          val.push(...recpaths);
+        }
       } else {
         val.push(filepath);
       }
@@ -19,6 +21,6 @@ export function getFilesRecursive(input: string) {
   } else if (inputStats.isFile()) {
     return [input];
   } else {
-    throw new Error("Not a valid file path");
+    throw new Error("Not a valid path");
   }
 }

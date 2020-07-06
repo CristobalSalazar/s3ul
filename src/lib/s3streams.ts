@@ -2,7 +2,7 @@ import { S3 } from "aws-sdk";
 import axios, { Method } from "axios";
 import { Readable, Writable } from "stream";
 import fs from "fs";
-import { logger } from "./lib/logger";
+import { logger } from "./logger";
 
 interface s3FsRequirements {
   fspath: string;
@@ -11,24 +11,6 @@ interface s3FsRequirements {
   recursive?: boolean;
   client: S3;
 }
-
-function getFilesRecursively(path: string): string[] {
-  const stats = fs.statSync(path);
-  const out = [];
-  if (stats.isDirectory()) {
-    const files = fs.readdirSync(path);
-    for (let file of files) {
-      const fileStats = fs.statSync(file);
-      if (fileStats.isDirectory()) {
-        out.push(...getFilesRecursively(file));
-      } else {
-        out.push(file);
-      }
-    }
-  }
-  return out;
-}
-
 export async function s3DownloadToFs(reqs: s3FsRequirements) {
   const stream = fs.createWriteStream(reqs.fspath);
   await downloadFromS3(reqs.client, reqs.bucketKey, reqs.bucket, stream);
@@ -78,7 +60,7 @@ async function downloadFromS3(
           headers["content-length"] || headers["Content-Length"];
         logger.startProgressBar(parseInt(contentLength));
       })
-      .on("httpDownloadProgress", progress => {
+      .on("httpDownloadProgress", (progress) => {
         console.log(progress.loaded);
         logger.updateProgressBar(progress);
       })
@@ -105,7 +87,7 @@ async function uploadToS3(
           Key: bucketKey,
           Bucket: bucketName,
           Body: stream,
-          ContentLength: contentLength
+          ContentLength: contentLength,
         },
         (err, data) => {
           logger.stopProgressBar();
@@ -132,7 +114,7 @@ export async function s3UploadFromUrl(
     url,
     method,
     headers,
-    responseType: "stream"
+    responseType: "stream",
   });
 
   const contentLength =

@@ -7,7 +7,8 @@ program.version("0.0.1");
 program
   .option("-a, --accessKey <access key>", "AWS Access Key")
   .option("-s, --secretKey <secret key>", "AWS Secret Key")
-  .option("-r, --region", "AWS region")
+  .option("--region", "AWS region")
+  .option("-r, --recursive", "upload directory recursively", false)
   .requiredOption("-b, --bucket <name>", "S3 Bucket Name");
 
 program
