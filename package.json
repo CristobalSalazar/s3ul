@@ -2,8 +2,8 @@
   "name": "s3ul",
   "version": "0.0.1",
   "bin": {
-    "s3ul": "dist/s3ul.js",
-    "s3dl": "dist/s3dl.js"
+    "s3ul": "dist/src/s3ul/s3ul.js",
+    "s3dl": "dist/src/s3dl/s3dl.js"
   },
   "scripts": {
     "build": "tsc",
