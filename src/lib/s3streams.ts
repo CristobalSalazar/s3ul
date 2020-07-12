@@ -1,38 +1,27 @@
-import { S3 } from "aws-sdk";
-import axios, { Method } from "axios";
-import { Readable, Writable } from "stream";
+import axios from "axios";
 import fs from "fs";
 import { logger } from "./logger";
-import { MultiBar } from "cli-progress";
+import {
+  S3UploadArgs,
+  S3DownloadArgs,
+  FsArgs,
+  UrlArgs,
+} from "./interfaces/S3Args";
+import { SingleBar } from "cli-progress";
 
-interface S3Args {
-  bucketName: string;
-  bucketKey: string;
-  s3Client: S3;
-  multiBar: MultiBar;
-}
-
-interface S3UploadArgs extends S3Args {
-  contentLength: number;
-  stream: Readable;
-}
-
-interface FSArgs extends S3Args {
-  filepath: string;
-}
-
-interface UrlArgs extends S3Args {
-  url: string;
-  method: Method;
-  headers?: { [key: string]: string };
-}
-
-export async function s3download(args: FSArgs) {
+export async function s3download(args: FsArgs) {
   const stream = fs.createWriteStream(args.filepath);
-  await downloadFromS3(args.s3Client, args.bucketKey, args.bucketName, stream);
+  await downloadFromS3({
+    bucketKey: args.bucketKey,
+    bucketName: args.bucketName,
+    multiBar: args.multiBar,
+    s3Client: args.s3Client,
+    writeStream: stream,
+  });
 }
 
-export async function fileUpload(args: FSArgs) {
+export async function fileUpload(args: FsArgs) {
+  // for individaul file upload
   const { filepath: fspath } = args;
   if (!fs.existsSync(fspath))
     throw new Error("Invalid file path, path does not exist");
@@ -47,9 +36,9 @@ export async function fileUpload(args: FSArgs) {
     s3Client: args.s3Client,
     bucketKey: args.bucketKey,
     bucketName: args.bucketName,
-    stream: readStream,
-    contentLength,
+    readStream: readStream,
     multiBar: args.multiBar,
+    contentLength,
   });
 }
 
@@ -73,40 +62,42 @@ export async function urlUpload(args: UrlArgs) {
     bucketName: args.bucketName,
     multiBar: args.multiBar,
     s3Client: args.s3Client,
-    stream: res.data,
+    readStream: res.data,
   });
 }
-async function downloadFromS3(
-  s3client: S3,
-  bucketKey: string,
-  bucketName: string,
-  stream: Writable
-) {
+async function downloadFromS3(args: S3DownloadArgs) {
   return new Promise((res, rej) => {
     logger.createProgressBar("Downloading...");
-    const readStream = s3client
-      .getObject({ Bucket: bucketName, Key: bucketKey }, (err, data) => {
-        logger.stopProgressBar();
-        if (err) {
-          logger.error(err.message);
-          rej(err);
-        } else {
-          logger.success("Finished downloading from s3");
-          res(data);
+    let bar: SingleBar;
+    const readStream = args.s3Client
+      .getObject(
+        { Bucket: args.bucketName, Key: args.bucketKey },
+        (err, data) => {
+          logger.stopProgressBar();
+          if (err) {
+            logger.error(err.message);
+            rej(err);
+          } else {
+            logger.success("Finished downloading from s3");
+            res(data);
+          }
         }
-      })
+      )
       .on("httpHeaders", (_, headers) => {
         const contentLength =
           headers["content-length"] || headers["Content-Length"];
-        logger.startProgressBar(parseInt(contentLength));
+        try {
+          const parsedContentLength = parseInt(contentLength);
+          bar = args.multiBar.create(parsedContentLength, 0);
+        } catch (err) {
+          throw new Error("content length header not present");
+        }
       })
       .on("httpDownloadProgress", (progress) => {
-        console.log(progress.loaded);
-        logger.updateProgressBar(progress);
+        bar.update(progress.loaded);
       })
       .createReadStream();
-
-    readStream.pipe(stream);
+    readStream.pipe(args.writeStream);
   });
 }
 
@@ -118,14 +109,13 @@ async function uploadToS3(args: S3UploadArgs) {
         {
           Key: args.bucketKey,
           Bucket: args.bucketName,
-          Body: args.stream,
+          Body: args.readStream,
           ContentLength: args.contentLength,
         },
         (err, data) => {
           bar.stop();
           if (err) rej(err);
           else {
-            logger.success("Finished uploading to s3");
             res(data);
           }
         }
