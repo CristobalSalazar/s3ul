@@ -2,44 +2,47 @@ import fs from "fs";
 import path from "path";
 import { Method } from "axios";
 import { S3 } from "aws-sdk";
-import { createS3Client } from "../lib/s3client";
+import { getS3Client } from "../lib/s3client";
 import { logger } from "../lib/logger";
-import { s3UploadFromFs, s3UploadFromUrl } from "../lib/s3streams";
-import { keyreader } from "../lib/keyreader";
+import { fileUpload, urlUpload } from "../lib/s3streams";
 import { getS3KeysFromDir } from "../lib/filereader";
+import { MultiBar, Presets } from "cli-progress";
 
-export async function main(resourcePath: string, bucketKey: string, args: any) {
+// resource path can be url filepath or dirpath
+export async function main(source: string, bucketKey: string, args: any) {
   let { accessKey, secretKey, bucket, headers, recursive } = args;
-  const client = getS3Client(accessKey, secretKey);
-  const isUrl = /https?:\/\//.test(resourcePath);
+  const s3client = getS3Client(accessKey, secretKey);
+  const isUrl = /https?:\/\//.test(source);
   if (isUrl) {
-    const parsedHeaders = headers ? parseHeaders(headers) : null;
+    const parsedHeaders = headers ? parseHeaders(headers) : undefined;
     const method = args.put ? "put" : args.post ? "post" : "get";
     urlUploadHandler({
-      url: resourcePath,
+      url: source,
       headers: parsedHeaders,
       method,
-      client,
+      client: s3client,
       bucket,
-      bucketKey
+      bucketKey,
     });
   } else {
     fsUploadHandler({
-      fspath: path.join(process.cwd(), resourcePath),
+      fspath: path.join(process.cwd(), source),
       bucket,
       bucketKey,
-      client,
-      recursive
+      client: s3client,
+      recursive,
     });
   }
 }
 
 function parseHeaders(headers: string) {
-  return headers.split(",").reduce((obj: any, str: string) => {
-    const [key, val] = str.split(":");
-    obj[key] = val;
-    return obj;
-  }, {});
+  return headers
+    .split(",")
+    .reduce((headersObject: { [key: string]: string }, str: string) => {
+      const [key, val] = str.split(":");
+      headersObject[key] = val;
+      return headersObject;
+    }, {});
 }
 
 interface FsUploadOptions {
@@ -51,16 +54,26 @@ interface FsUploadOptions {
 }
 async function fsUploadHandler(opts: FsUploadOptions) {
   const { fspath, bucket, bucketKey, recursive, client } = opts;
-  if (fs.existsSync(opts.fspath)) {
-    const keys = getS3KeysFromDir(fspath, bucketKey, recursive);
+
+  if (fs.existsSync(fspath)) {
+    // valid filepath
+    const s3keys = getS3KeysFromDir(fspath, bucketKey, recursive);
+    const multibar = new MultiBar(
+      {
+        hideCursor: true,
+      },
+      Presets.shades_grey
+    );
+
     try {
       await Promise.all(
-        keys.map(k =>
-          s3UploadFromFs({
-            fspath: k.fspath,
+        s3keys.map((k) =>
+          fileUpload({
+            filepath: k.fspath,
             bucketKey: k.s3key,
-            client,
-            bucket
+            s3Client: client,
+            bucketName: bucket,
+            multiBar: multibar,
           })
         )
       );
@@ -78,29 +91,22 @@ interface UrlUploadOptions {
   bucketKey: string;
   bucket: string;
   client: S3;
-  headers: { [key: string]: string } | null;
+  headers?: { [key: string]: string };
 }
 async function urlUploadHandler(opts: UrlUploadOptions) {
   const { url, method, headers, bucketKey, bucket, client } = opts;
+  const multibar = new MultiBar({ hideCursor: true }, Presets.shades_grey);
   try {
-    await s3UploadFromUrl(url, bucketKey, method, client, bucket, headers);
+    await urlUpload({
+      url,
+      bucketKey,
+      bucketName: bucket,
+      headers: headers || undefined,
+      method,
+      multiBar: multibar,
+      s3Client: client,
+    });
   } catch (err) {
     logger.error(err);
   }
-}
-
-function getS3Client(accessKey: string, secretKey: string) {
-  if ((!secretKey && accessKey) || (!accessKey && secretKey)) {
-    throw new Error("Must provide both keys as arguments or none");
-  } else if (!secretKey && !accessKey) {
-    const keys = keyreader.getAWSCredentials();
-    if (!keys) {
-      throw new Error(
-        "Must provide AWS credentials either as arguments or in HOME/.aws/credentials"
-      );
-    }
-    accessKey = keys.access;
-    secretKey = keys.secret;
-  }
-  return createS3Client(accessKey, secretKey);
 }

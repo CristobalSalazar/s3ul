@@ -7,15 +7,15 @@ export function getS3KeysFromDir(
   recursive: boolean
 ) {
   const fspaths = getFilesFromDir(fsdirpath, recursive);
-  return fspaths.map(fspath => {
+  return fspaths.map((fspath) => {
     return {
       fspath,
-      s3key: convertFsPathToS3Key(fsdirpath, fspath, bucketdir)
+      s3key: filePathToS3Key(fsdirpath, fspath, bucketdir),
     };
   });
 }
 
-export function convertFsPathToS3Key(
+export function filePathToS3Key(
   dirpath: string,
   filepath: string,
   bucketdir: string

@@ -1,5 +1,5 @@
 {
-  "name": "s3ul",
+  "name": "s3cli",
   "version": "0.0.1",
   "bin": {
     "s3ul": "dist/src/s3ul/s3ul.js",
