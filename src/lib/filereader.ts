@@ -1,4 +1,5 @@
 import fs from "fs";
+import urlJoin from "url-join";
 import path from "path";
 
 export function getS3KeysFromDir(
@@ -20,7 +21,8 @@ export function filePathToS3Key(
   filepath: string,
   bucketdir: string
 ) {
-  return path.join(
+  // need to be urlJoin
+  return urlJoin(
     bucketdir,
     filepath.substring(dirpath.length, filepath.length)
   );
