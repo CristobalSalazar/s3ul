@@ -100,7 +100,15 @@ interface UrlUploadOptions {
 }
 async function urlUploadHandler(opts: UrlUploadOptions) {
   const { url, method, headers, bucketKey, bucket, client } = opts;
-  const multibar = new MultiBar({ hideCursor: true }, Presets.shades_grey);
+  const multibar = new MultiBar(
+    {
+      hideCursor: true,
+      etaBuffer: 60,
+      format:
+        "{bucketKey} |{bar}| {percentage}% || ETA: {eta_formatted} || {value}/{total}",
+    },
+    Presets.shades_grey
+  );
   try {
     await urlUpload({
       url,
