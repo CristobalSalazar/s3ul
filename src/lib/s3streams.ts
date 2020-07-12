@@ -103,7 +103,10 @@ async function downloadFromS3(args: S3DownloadArgs) {
 
 async function uploadToS3(args: S3UploadArgs) {
   return new Promise((res, rej) => {
-    const bar = args.multiBar.create(args.contentLength, 0);
+    const bar = args.multiBar.create(args.contentLength, 0, {
+      bucketKey: args.bucketKey,
+    });
+
     args.s3Client
       .putObject(
         {

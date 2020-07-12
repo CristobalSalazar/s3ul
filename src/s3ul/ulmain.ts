@@ -61,6 +61,9 @@ async function fsUploadHandler(opts: FsUploadOptions) {
     const multibar = new MultiBar(
       {
         hideCursor: true,
+        etaBuffer: 60,
+        format:
+          "{bucketKey} |{bar}| {percentage}% || ETA: {eta_formatted} || {value}/{total}",
       },
       Presets.shades_grey
     );
