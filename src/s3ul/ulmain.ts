@@ -119,6 +119,7 @@ async function urlUploadHandler(opts: UrlUploadOptions) {
       multiBar: multibar,
       s3Client: client,
     });
+    multibar.stop();
     logger.success("Finished uploading to s3");
   } catch (err) {
     logger.error(err);
