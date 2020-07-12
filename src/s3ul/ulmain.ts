@@ -77,6 +77,8 @@ async function fsUploadHandler(opts: FsUploadOptions) {
           })
         )
       );
+      multibar.stop();
+      logger.success("Finished uploading to s3");
     } catch (err) {
       logger.error(err);
     }
@@ -106,6 +108,7 @@ async function urlUploadHandler(opts: UrlUploadOptions) {
       multiBar: multibar,
       s3Client: client,
     });
+    logger.success("Finished uploading to s3");
   } catch (err) {
     logger.error(err);
   }
