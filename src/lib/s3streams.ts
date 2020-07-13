@@ -5,7 +5,7 @@ import {
   S3UploadArgs,
   S3DownloadArgs,
   FsArgs,
-  UrlArgs,
+  UrlArgs
 } from "./interfaces/S3Args";
 import { SingleBar } from "cli-progress";
 
@@ -16,7 +16,7 @@ export async function s3download(args: FsArgs) {
     bucketName: args.bucketName,
     multiBar: args.multiBar,
     s3Client: args.s3Client,
-    writeStream: stream,
+    writeStream: stream
   });
 }
 
@@ -38,7 +38,7 @@ export async function fileUpload(args: FsArgs) {
     bucketName: args.bucketName,
     readStream: readStream,
     multiBar: args.multiBar,
-    contentLength,
+    contentLength
   });
 }
 
@@ -47,7 +47,7 @@ export async function urlUpload(args: UrlArgs) {
     url: args.url,
     method: args.method,
     headers: args.headers,
-    responseType: "stream",
+    responseType: "stream"
   });
 
   const contentLength =
@@ -62,23 +62,21 @@ export async function urlUpload(args: UrlArgs) {
     bucketName: args.bucketName,
     multiBar: args.multiBar,
     s3Client: args.s3Client,
-    readStream: res.data,
+    readStream: res.data
   });
 }
+
 async function downloadFromS3(args: S3DownloadArgs) {
   return new Promise((res, rej) => {
-    logger.createProgressBar("Downloading...");
     let bar: SingleBar;
-    const readStream = args.s3Client
+    args.s3Client
       .getObject(
         { Bucket: args.bucketName, Key: args.bucketKey },
         (err, data) => {
-          logger.stopProgressBar();
           if (err) {
             logger.error(err.message);
             rej(err);
           } else {
-            logger.success("Finished downloading from s3");
             res(data);
           }
         }
@@ -88,23 +86,29 @@ async function downloadFromS3(args: S3DownloadArgs) {
           headers["content-length"] || headers["Content-Length"];
         try {
           const parsedContentLength = parseInt(contentLength);
-          bar = args.multiBar.create(parsedContentLength, 0);
+          if (!bar && parsedContentLength) {
+            bar = args.multiBar.create(parsedContentLength, 0, {
+              bucketKey: args.bucketKey
+            });
+          }
         } catch (err) {
           throw new Error("content length header not present");
         }
       })
-      .on("httpDownloadProgress", (progress) => {
+      .on("httpDownloadProgress", progress => {
         bar.update(progress.loaded);
       })
-      .createReadStream();
-    readStream.pipe(args.writeStream);
+      .on("httpData", chunk => {
+        args.writeStream.write(chunk);
+      })
+      .on("httpDone", () => args.writeStream.end());
   });
 }
 
 async function uploadToS3(args: S3UploadArgs) {
   return new Promise((res, rej) => {
     const bar = args.multiBar.create(args.contentLength, 0, {
-      bucketKey: args.bucketKey,
+      bucketKey: args.bucketKey
     });
 
     args.s3Client
@@ -113,7 +117,7 @@ async function uploadToS3(args: S3UploadArgs) {
           Key: args.bucketKey,
           Bucket: args.bucketName,
           Body: args.readStream,
-          ContentLength: args.contentLength,
+          ContentLength: args.contentLength
         },
         (err, data) => {
           bar.stop();
@@ -123,7 +127,7 @@ async function uploadToS3(args: S3UploadArgs) {
           }
         }
       )
-      .on("httpUploadProgress", (progress) => {
+      .on("httpUploadProgress", progress => {
         bar.update(progress.loaded);
       });
   });
