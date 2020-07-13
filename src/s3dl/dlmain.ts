@@ -10,19 +10,22 @@ export async function main(bucketKey: string, resourcePath: string, args: any) {
   const fspath = path.join(process.cwd(), resourcePath);
   const multibar = new MultiBar(
     {
-      hideCursor: true,
+      hideCursor: true
     },
     Presets.shades_grey
   );
   try {
     await s3download({
       filepath: fspath,
-      bucketName: bucket,
       bucketKey,
+      bucketName: bucket,
       s3Client: s3client,
-      multiBar: multibar,
+      multiBar: multibar
     });
+    multibar.stop();
+    logger.success("Finished downloading from s3.");
   } catch (err) {
+    multibar.stop();
     logger.error(err);
   }
 }
