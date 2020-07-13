@@ -22,7 +22,7 @@ export async function main(source: string, bucketKey: string, args: any) {
       method,
       client: s3client,
       bucket,
-      bucketKey,
+      bucketKey
     });
   } else {
     fsUploadHandler({
@@ -30,7 +30,7 @@ export async function main(source: string, bucketKey: string, args: any) {
       bucket,
       bucketKey,
       client: s3client,
-      recursive,
+      recursive
     });
   }
 }
@@ -63,20 +63,20 @@ async function fsUploadHandler(opts: FsUploadOptions) {
         hideCursor: true,
         etaBuffer: 60,
         format:
-          "{bucketKey} |{bar}| {percentage}% || ETA: {eta_formatted} || {value}/{total}",
+          "{bucketKey} |{bar}| {percentage}% || ETA: {eta_formatted} || {value}/{total}"
       },
       Presets.shades_grey
     );
 
     try {
       await Promise.all(
-        s3keys.map((k) =>
+        s3keys.map(k =>
           fileUpload({
             filepath: k.fspath,
             bucketKey: k.s3key,
             s3Client: client,
             bucketName: bucket,
-            multiBar: multibar,
+            multiBar: multibar
           })
         )
       );
@@ -105,7 +105,7 @@ async function urlUploadHandler(opts: UrlUploadOptions) {
       hideCursor: true,
       etaBuffer: 60,
       format:
-        "{bucketKey} |{bar}| {percentage}% || ETA: {eta_formatted} || {value}/{total}",
+        "{bucketKey} |{bar}| {percentage}% || ETA: {eta_formatted} || {value}/{total}"
     },
     Presets.shades_grey
   );
@@ -117,7 +117,7 @@ async function urlUploadHandler(opts: UrlUploadOptions) {
       headers: headers || undefined,
       method,
       multiBar: multibar,
-      s3Client: client,
+      s3Client: client
     });
     multibar.stop();
     logger.success("Finished uploading to s3");
